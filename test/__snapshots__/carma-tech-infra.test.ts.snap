@@ -1,0 +1,667 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`Stock Ultimate Stack snapshot test 1`] = `
+{
+  "Outputs": {
+    "StateMachineArn": {
+      "Value": {
+        "Ref": "StateMachine2E01A3A5",
+      },
+    },
+  },
+  "Parameters": {
+    "BootstrapVersion": {
+      "Default": "/cdk-bootstrap/hnb659fds/version",
+      "Description": "Version of the CDK Bootstrap resources in this environment, automatically retrieved from SSM Parameter Store. [cdk:skip]",
+      "Type": "AWS::SSM::Parameter::Value<String>",
+    },
+  },
+  "Resources": {
+    "CustomJsonClassifier": {
+      "Properties": {
+        "JsonClassifier": {
+          "JsonPath": "$[*]",
+        },
+      },
+      "Type": "AWS::Glue::Classifier",
+    },
+    "GlueCrawlerRole4AA4B387": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "glue.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "Description": "Role assumed by AWS Glue Crawler",
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "GlueCrawlerRoleDefaultPolicy44958AC9": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StocksData9AE50C02",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StocksData9AE50C02",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "glue:CreateDatabase",
+                "glue:UpdateDatabase",
+                "glue:CreateTable",
+                "glue:UpdateTable",
+                "glue:CreatePartition",
+                "glue:UpdatePartition",
+                "logs:CreateLogGroup",
+                "logs:CreateLogStream",
+                "logs:PutLogEvents",
+                "s3:PutObject",
+                "s3:GetObject",
+                "s3:ListBucket",
+                "glue:GetDatabase",
+                "glue:GetTable",
+              ],
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "GlueCrawlerRoleDefaultPolicy44958AC9",
+        "Roles": [
+          {
+            "Ref": "GlueCrawlerRole4AA4B387",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "StateMachine2E01A3A5": {
+      "DeletionPolicy": "Delete",
+      "DependsOn": [
+        "StateMachineRoleDefaultPolicy433448B5",
+        "StateMachineRole78EC082E",
+      ],
+      "Properties": {
+        "DefinitionString": {
+          "Fn::Join": [
+            "",
+            [
+              "{"StartAt":"WaitCompile","States":{"WaitCompile":{"Type":"Wait","Seconds":1,"Next":"Invoke Step Function"},"Invoke Step Function":{"Next":"Job Complete?","Retry":[{"ErrorEquals":["Lambda.ClientExecutionTimeoutException","Lambda.ServiceException","Lambda.AWSLambdaException","Lambda.SdkClientException"],"IntervalSeconds":2,"MaxAttempts":6,"BackoffRate":2},{"ErrorEquals":["Stock API Failed"],"IntervalSeconds":10,"MaxAttempts":3,"BackoffRate":2}],"Type":"Task","OutputPath":"$.Payload","Resource":"arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::lambda:invoke","Parameters":{"FunctionName":"",
+              {
+                "Fn::GetAtt": [
+                  "StockNamesLambda05A0EA7B",
+                  "Arn",
+                ],
+              },
+              "","Payload.$":"$"}},"Job Complete?":{"Type":"Choice","Choices":[{"Variable":"$.statusCode","NumericEquals":400,"Next":"Job Failed"},{"Variable":"$.statusCode","NumericEquals":200,"Next":"InvokeS3PutObject"}],"Default":"Internal Error"},"Internal Error":{"Type":"Fail","Error":"Internal Error","Cause":"Internal Error"},"Job Failed":{"Type":"Fail","Error":"Stock API Failed","Cause":"Stock API Failed"},"InvokeS3PutObject":{"End":true,"Type":"Task","ResultPath":"$.Payload","Resource":"arn:",
+              {
+                "Ref": "AWS::Partition",
+              },
+              ":states:::aws-sdk:s3:putObject","Parameters":{"Bucket":"",
+              {
+                "Ref": "StocksData9AE50C02",
+              },
+              "","Key":"stocks_data/stock_assets_1698785705647.json","Body.$":"$.body"}}},"TimeoutSeconds":300}",
+            ],
+          ],
+        },
+        "RoleArn": {
+          "Fn::GetAtt": [
+            "StateMachineRole78EC082E",
+            "Arn",
+          ],
+        },
+        "StateMachineName": "StockUltimateStateMachine",
+      },
+      "Type": "AWS::StepFunctions::StateMachine",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "StateMachineEventsRoleDBCDECD1": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "events.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "StateMachineEventsRoleDefaultPolicyFB602CA9": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "states:StartExecution",
+              "Effect": "Allow",
+              "Resource": {
+                "Ref": "StateMachine2E01A3A5",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "StateMachineEventsRoleDefaultPolicyFB602CA9",
+        "Roles": [
+          {
+            "Ref": "StateMachineEventsRoleDBCDECD1",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "StateMachineRole78EC082E": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "states.us-east-2.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "StateMachineRoleDefaultPolicy433448B5": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": "s3:PutObject",
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "StocksData9AE50C02",
+                        "Arn",
+                      ],
+                    },
+                    "/*",
+                  ],
+                ],
+              },
+            },
+            {
+              "Action": "lambda:InvokeFunction",
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StockNamesLambda05A0EA7B",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StockNamesLambda05A0EA7B",
+                          "Arn",
+                        ],
+                      },
+                      ":*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": "s3:PutObject",
+              "Effect": "Allow",
+              "Resource": "*",
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "StateMachineRoleDefaultPolicy433448B5",
+        "Roles": [
+          {
+            "Ref": "StateMachineRole78EC082E",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "StockDatabase82C37E98": {
+      "Properties": {
+        "CatalogId": "395929101814",
+        "DatabaseInput": {
+          "Name": "stock-ultimate-dbb",
+        },
+      },
+      "Type": "AWS::Glue::Database",
+    },
+    "StockNamesLambda05A0EA7B": {
+      "DependsOn": [
+        "StockNamesLambdaServiceRoleDefaultPolicyC8FEEBC6",
+        "StockNamesLambdaServiceRoleD548ADF9",
+      ],
+      "Properties": {
+        "Code": {
+          "ImageUri": {
+            "Fn::Sub": "395929101814.dkr.ecr.us-east-2.\${AWS::URLSuffix}/cdk-hnb659fds-container-assets-395929101814-us-east-2:b0d5c954dccf802d6e1fd138f94d5b5d19c570df643955b03aac832a9cbf488a",
+          },
+        },
+        "Description": "Created Stock Ultimate Lambda on 2023-10-31T20:55:05.487Z",
+        "Environment": {
+          "Variables": {
+            "ALPACA_API_KEY": "AK4ECDTG3S4N42CPFDG0",
+            "ALPACA_API_SECRET": "fzOyObTExs70mDWYaeh2fE6oUA0CmWyO7dZukAIn",
+            "BUCKET_NAME": {
+              "Ref": "StocksData9AE50C02",
+            },
+          },
+        },
+        "FunctionName": "StockUltimateFunction",
+        "MemorySize": 1024,
+        "PackageType": "Image",
+        "Role": {
+          "Fn::GetAtt": [
+            "StockNamesLambdaServiceRoleD548ADF9",
+            "Arn",
+          ],
+        },
+        "Timeout": 300,
+      },
+      "Type": "AWS::Lambda::Function",
+    },
+    "StockNamesLambdaServiceRoleD548ADF9": {
+      "Properties": {
+        "AssumeRolePolicyDocument": {
+          "Statement": [
+            {
+              "Action": "sts:AssumeRole",
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "lambda.amazonaws.com",
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "ManagedPolicyArns": [
+          {
+            "Fn::Join": [
+              "",
+              [
+                "arn:",
+                {
+                  "Ref": "AWS::Partition",
+                },
+                ":iam::aws:policy/service-role/AWSLambdaBasicExecutionRole",
+              ],
+            ],
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Role",
+    },
+    "StockNamesLambdaServiceRoleDefaultPolicyC8FEEBC6": {
+      "Properties": {
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StocksData9AE50C02",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StocksData9AE50C02",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:PutObject",
+                "s3:GetObject",
+              ],
+              "Effect": "Allow",
+              "Resource": {
+                "Fn::Join": [
+                  "",
+                  [
+                    {
+                      "Fn::GetAtt": [
+                        "StocksData9AE50C02",
+                        "Arn",
+                      ],
+                    },
+                    "/*",
+                  ],
+                ],
+              },
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+        "PolicyName": "StockNamesLambdaServiceRoleDefaultPolicyC8FEEBC6",
+        "Roles": [
+          {
+            "Ref": "StockNamesLambdaServiceRoleD548ADF9",
+          },
+        ],
+      },
+      "Type": "AWS::IAM::Policy",
+    },
+    "StockUltimateCrawler": {
+      "Properties": {
+        "Classifiers": [
+          {
+            "Ref": "CustomJsonClassifier",
+          },
+        ],
+        "DatabaseName": {
+          "Ref": "StockDatabase82C37E98",
+        },
+        "Name": "StockUltimateCrawler",
+        "Role": {
+          "Fn::GetAtt": [
+            "GlueCrawlerRole4AA4B387",
+            "Arn",
+          ],
+        },
+        "Schedule": {
+          "ScheduleExpression": "cron(14 14 ? * WED *)",
+        },
+        "SchemaChangePolicy": {
+          "DeleteBehavior": "DEPRECATE_IN_DATABASE",
+          "UpdateBehavior": "UPDATE_IN_DATABASE",
+        },
+        "TablePrefix": "stock-ultimate-",
+        "Targets": {
+          "S3Targets": [
+            {
+              "Path": {
+                "Fn::Join": [
+                  "",
+                  [
+                    "s3://",
+                    {
+                      "Ref": "StocksData9AE50C02",
+                    },
+                    "/assets/",
+                  ],
+                ],
+              },
+            },
+          ],
+        },
+      },
+      "Type": "AWS::Glue::Crawler",
+    },
+    "StocksData9AE50C02": {
+      "DeletionPolicy": "Delete",
+      "Properties": {
+        "BucketName": "stock-ultimate-bucket",
+        "VersioningConfiguration": {
+          "Status": "Enabled",
+        },
+      },
+      "Type": "AWS::S3::Bucket",
+      "UpdateReplacePolicy": "Delete",
+    },
+    "StocksDataPolicy5FAFC471": {
+      "Properties": {
+        "Bucket": {
+          "Ref": "StocksData9AE50C02",
+        },
+        "PolicyDocument": {
+          "Statement": [
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "s3.amazonaws.com",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StocksData9AE50C02",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StocksData9AE50C02",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "glue.amazonaws.com",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StocksData9AE50C02",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StocksData9AE50C02",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+            {
+              "Action": [
+                "s3:GetObject*",
+                "s3:GetBucket*",
+                "s3:List*",
+                "s3:DeleteObject*",
+                "s3:PutObject",
+                "s3:PutObjectLegalHold",
+                "s3:PutObjectRetention",
+                "s3:PutObjectTagging",
+                "s3:PutObjectVersionTagging",
+                "s3:Abort*",
+              ],
+              "Effect": "Allow",
+              "Principal": {
+                "Service": "athena.amazonaws.com",
+              },
+              "Resource": [
+                {
+                  "Fn::GetAtt": [
+                    "StocksData9AE50C02",
+                    "Arn",
+                  ],
+                },
+                {
+                  "Fn::Join": [
+                    "",
+                    [
+                      {
+                        "Fn::GetAtt": [
+                          "StocksData9AE50C02",
+                          "Arn",
+                        ],
+                      },
+                      "/*",
+                    ],
+                  ],
+                },
+              ],
+            },
+          ],
+          "Version": "2012-10-17",
+        },
+      },
+      "Type": "AWS::S3::BucketPolicy",
+    },
+    "WeeklyTriggerRuleForStateMachine3DAC32CD": {
+      "Properties": {
+        "ScheduleExpression": "cron(14 7 ? * WED *)",
+        "State": "ENABLED",
+        "Targets": [
+          {
+            "Arn": {
+              "Ref": "StateMachine2E01A3A5",
+            },
+            "Id": "Target0",
+            "RoleArn": {
+              "Fn::GetAtt": [
+                "StateMachineEventsRoleDBCDECD1",
+                "Arn",
+              ],
+            },
+          },
+        ],
+      },
+      "Type": "AWS::Events::Rule",
+    },
+  },
+  "Rules": {
+    "CheckBootstrapVersion": {
+      "Assertions": [
+        {
+          "Assert": {
+            "Fn::Not": [
+              {
+                "Fn::Contains": [
+                  [
+                    "1",
+                    "2",
+                    "3",
+                    "4",
+                    "5",
+                  ],
+                  {
+                    "Ref": "BootstrapVersion",
+                  },
+                ],
+              },
+            ],
+          },
+          "AssertDescription": "CDK bootstrap stack version 6 required. Please run 'cdk bootstrap' with a recent version of the CDK CLI.",
+        },
+      ],
+    },
+  },
+}
+`;
