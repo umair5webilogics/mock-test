@@ -31,13 +31,6 @@ jobs:
 
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Get current date
-        id: date
-        run: echo "::set-output name=date::$(date +'%Y%m%d')"
-
       - uses: actions/github-script@v6
         id: create-combined-pr
         name: Create Combined PR
@@ -111,13 +104,11 @@ jobs:
               core.setFailed('No PRs/branches matched criteria');
               return;
             }
-            const currentDate = "${{ steps.date.outputs.date }}";
-            const combineBranchNameWithDate = '${{ github.event.inputs.combineBranchName }}' + '-' + currentDate;
             try {
               await github.rest.git.createRef({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                ref: 'refs/heads/' + combineBranchNameWithDate,
+                ref: 'refs/heads/' + '${{ github.event.inputs.combineBranchName }}',
                 sha: baseBranchSHA
               });
             } catch (error) {
@@ -133,7 +124,7 @@ jobs:
                 await github.rest.repos.merge({
                   owner: context.repo.owner,
                   repo: context.repo.repo,
-                  base: combineBranchNameWithDate,
+                  base: '${{ github.event.inputs.combineBranchName }}',
                   head: branch,
                 });
                 console.log('Merged branch ' + branch);
@@ -155,7 +146,7 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               title: 'Combined PR',
-              head: combineBranchNameWithDate,
+              head: '${{ github.event.inputs.combineBranchName }}',
               base: baseBranch,
               body: body
             });
