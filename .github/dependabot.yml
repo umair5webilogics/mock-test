@@ -26,7 +26,7 @@ updates:
     directory: "/lib/lambda_functions" 
     target-branch: main
     schedule:
-      interval: "daily"
+      interval: "monthly"
     pull-request-branch-name:
       separator: "/"
     labels:
